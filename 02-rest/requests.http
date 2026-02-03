@@ -2,7 +2,7 @@
 GET http://127.0.0.1:3000/ HTTP/1.1
 
 ### Get article
-GET http://127.0.0.1:3000/articles/5301a5e933715728 HTTP/1.1
+GET http://127.0.0.1:3000/articles/c2826d515789a42a HTTP/1.1
 
 ### Get articles
 GET http://127.0.0.1:3000/articles HTTP/1.1
@@ -13,4 +13,12 @@ content-type: application/json
 
 {
     "text": "lorem ipsum"
+}
+
+### Update article
+POST http://127.0.0.1:3000/articles/4026b8ddf0b38923 HTTP/1.1
+content-type: application/json
+
+{
+    "text": "dolor sit amet"
 }
