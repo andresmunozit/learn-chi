@@ -16,9 +16,13 @@ content-type: application/json
 }
 
 ### Update article
-POST http://127.0.0.1:3000/articles/4026b8ddf0b38923 HTTP/1.1
+PUT http://127.0.0.1:3000/articles/2fc7737544ca5db9 HTTP/1.1
 content-type: application/json
 
 {
     "text": "dolor sit amet"
 }
+
+### Delee article
+DELETE http://127.0.0.1:3000/articles/57f6ff508ef27927 HTTP/1.1
+content-type: application/json

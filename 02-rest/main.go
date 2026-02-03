@@ -32,6 +32,7 @@ func main() {
 		r.Get("/{articleId}", getArticle)
 		r.Post("/", createArticle)
 		r.Put("/{articleId}", updateArticle)
+		r.Delete("/{articleId}", deleteArticle)
 	})
 
 	http.ListenAndServe(":3000", r)
@@ -109,4 +110,23 @@ func updateArticle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(a)
+}
+
+func deleteArticle(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "articleId")
+
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	a, ok := articles[id]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	delete(articles, a.Id)
+
+	w.WriteHeader(http.StatusOK)
 }
