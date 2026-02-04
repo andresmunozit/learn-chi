@@ -1,14 +1,52 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
 func main() {
+	r := chi.NewRouter()
 
+	r.Use(middleware.Logger)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.AllowContentType("application/json"))
+
+	r.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(struct {
+			Status string `json:"status"`
+		}{"ok"})
+	})
+
+	r.Route("/articles", func(r chi.Router) {
+		// r.Use(ArticleCtx)
+		r.Get("/", ListArticles)
+	})
+
+	http.ListenAndServe(":3000", r)
 }
+
+// Handlers
+func ListArticles(w http.ResponseWriter, r *http.Request) {
+	err := render.RenderList(w, r, NewArticleResponseList(articles))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Middleware
+// func ArticleCtx(h http.Handler) http.Handler {
+
+// }
 
 // Types
 type User struct {
@@ -17,10 +55,26 @@ type User struct {
 }
 
 type Article struct {
-	ID     string
-	UserID int64
-	Title  string
-	Slug   string
+	ID     string `json:"id"`
+	UserID int64  `json:"user_id"`
+	Title  string `json:"title"`
+	Slug   string `json:"slug"`
+}
+
+type ArticleResponse struct {
+	*Article
+}
+
+func (ar *ArticleResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func NewArticleResponseList(articles []*Article) []render.Renderer {
+	var renderers []render.Renderer
+	for _, a := range articles {
+		renderers = append(renderers, &ArticleResponse{a})
+	}
+	return renderers
 }
 
 // DB values
