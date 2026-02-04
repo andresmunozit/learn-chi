@@ -37,9 +37,32 @@ func main() {
 
 // Handlers
 func ListArticles(w http.ResponseWriter, r *http.Request) {
-	err := render.RenderList(w, r, NewArticleResponseList(articles))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := render.RenderList(w, r, NewArticleListResponse(articles)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+// Types
+type ErrResponse struct {
+	Err            error  `json:"-"`
+	HTTPStatusCode int    `json:"-"`
+	StatusText     string `json:"status"`
+	AppCode        int64  `json:"code,omitempty"`
+	ErrorText      string `json:"error,omitempty"`
+}
+
+func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	render.Status(r, e.HTTPStatusCode)
+	return nil
+}
+
+func ErrRender(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: 422,
+		StatusText:     "Error rendering response.",
+		ErrorText:      err.Error(),
 	}
 }
 
@@ -48,7 +71,6 @@ func ListArticles(w http.ResponseWriter, r *http.Request) {
 
 // }
 
-// Types
 type User struct {
 	ID   int64
 	Name string
@@ -69,7 +91,7 @@ func (ar *ArticleResponse) Render(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func NewArticleResponseList(articles []*Article) []render.Renderer {
+func NewArticleListResponse(articles []*Article) []render.Renderer {
 	var renderers []render.Renderer
 	for _, a := range articles {
 		renderers = append(renderers, &ArticleResponse{a})
