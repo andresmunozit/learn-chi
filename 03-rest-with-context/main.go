@@ -32,6 +32,7 @@ func main() {
 	r.Route("/articles", func(r chi.Router) {
 		// TODO search route
 		r.Get("/", ListArticles)
+		r.Post("/", CreateArticle)
 
 		r.Route("/{articleID}", func(r chi.Router) {
 			r.Use(ArticleCtx)
@@ -88,8 +89,19 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewArticleResponse(article))
 }
 
-var ErrBadRequest = &ErrResponse{HTTPStatusCode: http.StatusBadRequest, StatusText: "Bad request."}
-var InternalServerError = &ErrResponse{HTTPStatusCode: http.StatusInternalServerError, StatusText: "Internal server error."}
+func CreateArticle(w http.ResponseWriter, r *http.Request) {
+	data := &ArticleRequest{}
+
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	article := data.Article
+
+	dbNewArticle(article)
+	render.Render(w, r, NewArticleResponse(article))
+}
 
 // Middlewares
 // load an article object from the url parameters

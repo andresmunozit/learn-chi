@@ -18,3 +18,13 @@ content-type: application/json
 
 ### Delete article
 DELETE http://127.0.0.1:3000/articles/2 HTTP/1.1
+
+### Create article
+POST http://127.0.0.1:3000/articles HTTP/1.1
+content-type: application/json
+
+{
+    "user_id": 2,
+    "title": "consectetur",
+    "slug": "consectetur"
+}
