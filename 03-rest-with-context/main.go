@@ -66,14 +66,9 @@ func ErrRender(err error) render.Renderer {
 	}
 }
 
-// Middleware
-// func ArticleCtx(h http.Handler) http.Handler {
-
-// }
-
 type User struct {
-	ID   int64
-	Name string
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 type Article struct {
@@ -83,26 +78,48 @@ type Article struct {
 	Slug   string `json:"slug"`
 }
 
+type UserPayload struct {
+	*User
+}
+
+func NewUserPayloadResponse(user *User) *UserPayload {
+	return &UserPayload{user}
+}
+
 type ArticleResponse struct {
 	*Article
+
+	User *UserPayload `json:"user,omitempty"`
 }
 
 func (ar *ArticleResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewArticleListResponse(articles []*Article) []render.Renderer {
-	var renderers []render.Renderer
-	for _, a := range articles {
-		renderers = append(renderers, &ArticleResponse{a})
+func NewArticleResponse(article *Article) *ArticleResponse {
+	resp := &ArticleResponse{Article: article}
+
+	if resp.User == nil {
+		if user, _ := dbGetUser(resp.UserID); user != nil {
+			resp.User = NewUserPayloadResponse(user)
+		}
 	}
-	return renderers
+
+	return resp
+}
+
+func NewArticleListResponse(articles []*Article) []render.Renderer {
+	list := []render.Renderer{}
+	for _, a := range articles {
+		list = append(list, NewArticleResponse(a))
+	}
+	return list
 }
 
 // DB values
 var users = []*User{
 	{ID: 1, Name: "Andres"},
-	{ID: 1, Name: "Mateo"},
+	{ID: 2, Name: "Mateo"},
 }
 
 var articles = []*Article{
