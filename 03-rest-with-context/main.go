@@ -37,6 +37,7 @@ func main() {
 			r.Use(ArticleCtx)
 			r.Get("/", GetArticle)
 			r.Put("/", UpdateArticle)
+			r.Delete("/", DeleteArticle)
 		})
 	})
 
@@ -71,6 +72,19 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	article = data.Article
 	dbUpdateArticle(article.ID, article)
 
+	render.Render(w, r, NewArticleResponse(article))
+}
+
+func DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	article := r.Context().Value("article").(*Article)
+
+	article, err = dbRemoveArticle(article.ID)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
 	render.Render(w, r, NewArticleResponse(article))
 }
 
