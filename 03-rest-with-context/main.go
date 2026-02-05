@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -60,42 +61,17 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	var articleUpdate UpdateArticleRequest
-
-	// Get article from body
-	if err := json.NewDecoder(r.Body).Decode(&articleUpdate); err != nil {
-		render.Render(w, r, ErrBadRequest)
-		return
-	}
-
-	// Update article got from body
 	article := r.Context().Value("article").(*Article)
 
-	if article == nil {
+	data := &ArticleRequest{Article: article}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+	article = data.Article
+	dbUpdateArticle(article.ID, article)
 
-	article.UserID = articleUpdate.UserID
-	article.Title = articleUpdate.Title
-	article.Slug = articleUpdate.Slug
-
-	var err error
-	if article, err = dbUpdateArticle(article.ID, article); err != nil {
-		render.Render(w, r, InternalServerError)
-		return
-	}
-
-	// Render new article
-	if err := render.Render(w, r, NewArticleResponse(article)); err != nil {
-		render.Render(w, r, ErrRender(err))
-		return
-	}
-}
-
-type UpdateArticleRequest struct {
-	UserID int64  `json:"user_id"`
-	Title  string `json:"title"`
-	Slug   string `json:"slug"`
+	render.Render(w, r, NewArticleResponse(article))
 }
 
 var ErrBadRequest = &ErrResponse{HTTPStatusCode: http.StatusBadRequest, StatusText: "Bad request."}
@@ -150,7 +126,16 @@ func ErrRender(err error) render.Renderer {
 	}
 }
 
-var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}
+func ErrInvalidRequest(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusBadRequest,
+		StatusText:     "Invalid request",
+		ErrorText:      err.Error(),
+	}
+}
+
+var ErrNotFound = &ErrResponse{HTTPStatusCode: http.StatusNotFound, StatusText: "Resource not found."}
 
 type User struct {
 	ID   int64  `json:"id"`
@@ -170,6 +155,22 @@ type UserPayload struct {
 
 func NewUserPayloadResponse(user *User) *UserPayload {
 	return &UserPayload{user}
+}
+
+type ArticleRequest struct {
+	*Article
+	User        *UserPayload `json:"user,omitempty"`
+	ProtectedID string       `json:"id"` // override id json to have more control
+}
+
+func (a *ArticleRequest) Bind(r *http.Request) error {
+	if a.Article == nil {
+		return errors.New("missing required Article fields")
+	}
+
+	a.ProtectedID = ""
+	a.Article.Title = strings.ToLower(a.Article.Title)
+	return nil
 }
 
 type ArticleResponse struct {
