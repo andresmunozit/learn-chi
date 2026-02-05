@@ -7,3 +7,11 @@ GET http://127.0.0.1:3000/articles HTTP/1.1
 
 ### Get article
 GET http://127.0.0.1:3000/articles/2 HTTP/1.1
+
+### Update article
+PUT http://127.0.0.1:3000/articles/2 HTTP/1.1
+content-type: application/json
+
+{
+    "title": "Test"
+}

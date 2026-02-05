@@ -35,6 +35,7 @@ func main() {
 		r.Route("/{articleID}", func(r chi.Router) {
 			r.Use(ArticleCtx)
 			r.Get("/", GetArticle)
+			r.Put("/", UpdateArticle)
 		})
 	})
 
@@ -57,6 +58,48 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func UpdateArticle(w http.ResponseWriter, r *http.Request) {
+	var articleUpdate UpdateArticleRequest
+
+	// Get article from body
+	if err := json.NewDecoder(r.Body).Decode(&articleUpdate); err != nil {
+		render.Render(w, r, ErrBadRequest)
+		return
+	}
+
+	// Update article got from body
+	article := r.Context().Value("article").(*Article)
+
+	if article == nil {
+		return
+	}
+
+	article.UserID = articleUpdate.UserID
+	article.Title = articleUpdate.Title
+	article.Slug = articleUpdate.Slug
+
+	var err error
+	if article, err = dbUpdateArticle(article.ID, article); err != nil {
+		render.Render(w, r, InternalServerError)
+		return
+	}
+
+	// Render new article
+	if err := render.Render(w, r, NewArticleResponse(article)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+type UpdateArticleRequest struct {
+	UserID int64  `json:"user_id"`
+	Title  string `json:"title"`
+	Slug   string `json:"slug"`
+}
+
+var ErrBadRequest = &ErrResponse{HTTPStatusCode: http.StatusBadRequest, StatusText: "Bad request."}
+var InternalServerError = &ErrResponse{HTTPStatusCode: http.StatusInternalServerError, StatusText: "Internal server error."}
 
 // Middlewares
 // load an article object from the url parameters
