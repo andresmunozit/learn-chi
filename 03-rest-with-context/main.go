@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,8 +29,13 @@ func main() {
 	})
 
 	r.Route("/articles", func(r chi.Router) {
-		// r.Use(ArticleCtx)
+		// TODO search route
 		r.Get("/", ListArticles)
+
+		r.Route("/{articleID}", func(r chi.Router) {
+			r.Use(ArticleCtx)
+			r.Get("/", GetArticle)
+		})
 	})
 
 	http.ListenAndServe(":3000", r)
@@ -41,6 +47,41 @@ func ListArticles(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrRender(err))
 		return
 	}
+}
+
+func GetArticle(w http.ResponseWriter, r *http.Request) {
+	article := r.Context().Value("article").(*Article)
+
+	if err := render.Render(w, r, NewArticleResponse(article)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+// Middlewares
+// load an article object from the url parameters
+func ArticleCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var article *Article
+		var err error
+
+		if articleID := chi.URLParam(r, "articleID"); articleID != "" {
+			article, err = dbGetArticle(articleID)
+		} else if articleSlug := chi.URLParam(r, "articleSlug"); articleSlug != "" {
+			article, err = dbGetArticleBySlug(articleSlug)
+		} else {
+			render.Render(w, r, ErrNotFound)
+			return
+		}
+		if err != nil {
+			render.Render(w, r, ErrNotFound)
+			return
+		}
+
+		// Add article to context
+		ctx := context.WithValue(r.Context(), "article", article)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // Types
@@ -65,6 +106,8 @@ func ErrRender(err error) render.Renderer {
 		ErrorText:      err.Error(),
 	}
 }
+
+var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}
 
 type User struct {
 	ID   int64  `json:"id"`
