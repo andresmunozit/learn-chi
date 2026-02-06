@@ -29,6 +29,11 @@ func main() {
 		}{"ok"})
 	})
 
+	r.Get("/panic", func(w http.ResponseWriter, r *http.Request) {
+		// This will be recovered automatically
+		panic("panic")
+	})
+
 	r.Route("/articles", func(r chi.Router) {
 		// TODO search route
 		r.Get("/", ListArticles)

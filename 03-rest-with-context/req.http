@@ -28,3 +28,6 @@ content-type: application/json
     "title": "consectetur",
     "slug": "consectetur"
 }
+
+### Panic
+GET http://127.0.0.1:3000/panic HTTP/1.1
