@@ -40,12 +40,20 @@ func main() {
 		r.Post("/", CreateArticle)
 		r.Get("/search", SearchArticles)
 
+		// Matches article IDs (general catch‑all segment); unconstrained so chi may prefer regex
+		// routes first for specific matches.
 		r.Route("/{articleID}", func(r chi.Router) {
 			r.Use(ArticleCtx)
 			r.Get("/", GetArticle)
 			r.Put("/", UpdateArticle)
 			r.Delete("/", DeleteArticle)
 		})
+
+		// Matches only lowercase slug patterns via regex; chi considers this more specific and will
+		// route /articles/lorem here over {articleID}.
+		// Matches one or more (+) characters that are lowercase letters (a to z) and hyphens (-).
+		// "With" adds inline middlewares for an endpoint handler.
+		r.With(ArticleCtx).Get("/{articleSlug:[a-z-]+}", GetArticle)
 	})
 
 	http.ListenAndServe(":3000", r)
