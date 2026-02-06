@@ -38,6 +38,7 @@ func main() {
 		// TODO search route
 		r.Get("/", ListArticles)
 		r.Post("/", CreateArticle)
+		r.Get("/search", SearchArticles)
 
 		r.Route("/{articleID}", func(r chi.Router) {
 			r.Use(ArticleCtx)
@@ -106,6 +107,26 @@ func CreateArticle(w http.ResponseWriter, r *http.Request) {
 
 	dbNewArticle(article)
 	render.Render(w, r, NewArticleResponse(article))
+}
+
+func SearchArticles(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	title := r.Form.Get("title")
+
+	if title == "" {
+		err := errors.New("title query param must be set")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	foundArticles := make([]*Article, 0)
+	for _, a := range articles {
+		if strings.Contains(a.Title, title) {
+			foundArticles = append(foundArticles, a)
+		}
+	}
+
+	render.RenderList(w, r, NewArticleListResponse(foundArticles))
 }
 
 // Middlewares

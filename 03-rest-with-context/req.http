@@ -31,3 +31,15 @@ content-type: application/json
 
 ### Panic
 GET http://127.0.0.1:3000/panic HTTP/1.1
+
+### Search
+GET http://127.0.0.1:3000/articles/search?title=Lo HTTP/1.1
+
+### Search
+GET http://127.0.0.1:3000/articles/search?title=m HTTP/1.1
+
+### Search
+GET http://127.0.0.1:3000/articles/search?title=x HTTP/1.1
+
+### Search
+GET http://127.0.0.1:3000/articles/search HTTP/1.1
